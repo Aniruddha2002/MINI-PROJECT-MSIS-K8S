@@ -1,0 +1,2 @@
+feature_name,source,description,data_type
+cluster_name,Kubernetes,Name of the assessed Kubernetes cluster,categorical

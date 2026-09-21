@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: secure-goat-home
+  namespace: security-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: secure-goat-home
+  template:
+    metadata:
+      labels:
+        app: secure-goat-home
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: goat-home
+        image: madhuakula/k8s-goat-home
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 30m
+            memory: 50Mi
+          limits:
+            cpu: 100m
+            memory: 100Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: [ALL]
+        volumeMounts:
+        - name: nginx-cache
+          mountPath: /var/cache/nginx
+        - name: nginx-run
+          mountPath: /var/run
+        - name: nginx-log
+          mountPath: /var/log/nginx
+      volumes:
+      - name: nginx-cache
+        emptyDir: {}
+      - name: nginx-run
+        emptyDir: {}
+      - name: nginx-log
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: secure-goat-home
+  namespace: security-lab
+spec:
+  selector:
+    app: secure-goat-home
+  ports:
+  - port: 80
+    targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: secure-goat-home-default-deny
+  namespace: security-lab
+spec:
+  podSelector:
+    matchLabels:
+      app: secure-goat-home
+  policyTypes:
+  - Ingress
+  - Egress

@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: secure-metadata-db
+  namespace: security-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: secure-metadata-db
+  template:
+    metadata:
+      labels:
+        app: secure-metadata-db
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: metadata-db
+        image: madhuakula/k8s-goat-metadata-db:latest
+        ports:
+        - containerPort: 80
+          name: http
+        resources:
+          requests:
+            cpu: 30m
+            memory: 60Mi
+          limits:
+            cpu: 100m
+            memory: 60Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: [ALL]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: secure-metadata-db
+  namespace: security-lab
+spec:
+  selector:
+    app: secure-metadata-db
+  ports:
+  - port: 80
+    targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: secure-metadata-db-default-deny
+  namespace: security-lab
+spec:
+  podSelector:
+    matchLabels:
+      app: secure-metadata-db
+  policyTypes:
+  - Ingress
+  - Egress

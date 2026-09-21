@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: variant-v07
+  namespace: ml-variants
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: variant-v07
+  template:
+    metadata:
+      labels:
+        app: variant-v07
+    spec:
+      hostIPC: true
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: app
+        image: alpine:3.20
+        command:
+        - /bin/sh
+        - -c
+        - sleep 3600
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            cpu: 50m
+            memory: 32Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: [ALL]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: variant-v07-default-deny
+  namespace: ml-variants
+spec:
+  podSelector:
+    matchLabels:
+      app: variant-v07
+  policyTypes:
+  - Ingress
+  - Egress

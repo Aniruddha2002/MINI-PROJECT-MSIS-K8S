@@ -1,0 +1,19 @@
+﻿{
+    "spec":  {
+                 "podSelector":  {
+                                     "matchLabels":  {
+                                                         "variant":  "variant-secure-7"
+                                                     }
+                                 },
+                 "policyTypes":  [
+                                     "Ingress",
+                                     "Egress"
+                                 ]
+             },
+    "metadata":  {
+                     "namespace":  "ml-variants",
+                     "name":  "variant-secure-7-deny"
+                 },
+    "apiVersion":  "networking.k8s.io/v1",
+    "kind":  "NetworkPolicy"
+}

@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: insecure-app
+  namespace: insecure-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: insecure-app
+  template:
+    metadata:
+      labels:
+        app: insecure-app
+    spec:
+      # Explicitly mounting the token
+      automountServiceAccountToken: true
+      # Breaking process and IPC isolation
+      hostPID: true
+      hostIPC: true
+      containers:
+      - name: insecure-container
+        image: nginx:alpine
+        # Intentionally omitting 'resources' to trigger missing CPU/Memory limits
+        securityContext:
+          # Extremely permissive container settings
+          privileged: true
+          allowPrivilegeEscalation: true
+          readOnlyRootFilesystem: false
+          # Intentionally omitting runAsUser, runAsGroup, runAsNonRoot (defaults to root)
+          # Intentionally omitting capabilities drop
+          # Intentionally omitting seccompProfile
+        volumeMounts:
+        # Mounting a sensitive host directory into the container
+        - mountPath: /host-var-log
+          name: host-log-volume
+      volumes:
+      - name: host-log-volume
+        hostPath:
+          path: /var/log
+          type: DirectoryOrCreate

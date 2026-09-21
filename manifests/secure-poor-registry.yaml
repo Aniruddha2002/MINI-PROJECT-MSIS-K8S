@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: secure-poor-registry
+  namespace: security-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: secure-poor-registry
+  template:
+    metadata:
+      labels:
+        app: secure-poor-registry
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: poor-registry
+        image: madhuakula/k8s-goat-poor-registry
+        ports:
+        - containerPort: 5000
+          name: registry
+        resources:
+          requests:
+            cpu: 30m
+            memory: 50Mi
+          limits:
+            cpu: 100m
+            memory: 100Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: [ALL]
+        volumeMounts:
+        - name: registry-data
+          mountPath: /var/custom/registry
+      volumes:
+      - name: registry-data
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: secure-poor-registry
+  namespace: security-lab
+spec:
+  selector:
+    app: secure-poor-registry
+  ports:
+  - port: 5000
+    targetPort: 5000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: secure-poor-registry-default-deny
+  namespace: security-lab
+spec:
+  podSelector:
+    matchLabels:
+      app: secure-poor-registry
+  policyTypes:
+  - Ingress
+  - Egress

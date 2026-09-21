@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: secure-system-monitor
+  namespace: security-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: secure-system-monitor
+  template:
+    metadata:
+      labels:
+        app: secure-system-monitor
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: system-monitor
+        image: madhuakula/k8s-goat-system-monitor
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 20m
+            memory: 50Mi
+          limits:
+            cpu: 100m
+            memory: 50Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: [ALL]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: secure-system-monitor
+  namespace: security-lab
+spec:
+  selector:
+    app: secure-system-monitor
+  ports:
+  - port: 8080
+    targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: secure-system-monitor-default-deny
+  namespace: security-lab
+spec:
+  podSelector:
+    matchLabels:
+      app: secure-system-monitor
+  policyTypes:
+  - Ingress
+  - Egress
